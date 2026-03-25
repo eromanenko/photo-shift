@@ -3,15 +3,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const menuScreen = document.getElementById('menu-screen');
     const gameScreen = document.getElementById('game-screen');
     const loadingOverlay = document.getElementById('loading-overlay');
-    const btnStart = document.getElementById('btn-start');
     const btnReturn = document.getElementById('btn-return');
     const btnRestart = document.getElementById('btn-restart');
     const btnHint = document.getElementById('btn-hint');
     const fileUpload = document.getElementById('file-upload');
-    const diffRadios = document.getElementsByName('difficulty');
-    const sourceRadios = document.getElementsByName('photo-source');
-    const lblPicsum = document.getElementById('lbl-picsum');
-    const lblUpload = document.getElementById('lbl-upload');
+    const cameraUpload = document.getElementById('camera-upload');
+    const sourceCards = document.querySelectorAll('.source-card');
+    const selectedSourceInput = document.getElementById('selected-source');
     const moveCounter = document.getElementById('move-counter');
     
     // Modals
@@ -32,40 +30,53 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentGame = null;
 
     // --- Menu Event Listeners ---
-    fileUpload.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                gameConfig.uploadedDataUrl = ev.target.result;
-                document.querySelector('input[name="photo-source"][value="upload"]').checked = true;
-                
-                if (gameScreen.classList.contains('active')) {
-                    btnStart.click();
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-    });
+    // --- Source Selection logic ---
+    function setSource(source) {
+        selectedSourceInput.value = source;
+    }
 
-    // Removed lblUpload click listener because clicking a label automatically clicks its associated radio input.
-    sourceRadios.forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            if (e.target.value === 'upload' && !gameConfig.uploadedDataUrl) {
+    // Initialize with default
+    setSource('picsum');
+
+    sourceCards.forEach(card => {
+        card.addEventListener('click', () => {
+            const source = card.id.replace('card-', '');
+            setSource(source);
+            
+            if (source === 'camera') {
+                cameraUpload.click();
+            } else if (source === 'gallery') {
                 fileUpload.click();
+            } else if (source === 'picsum') {
+                startGameFlow();
             }
         });
     });
 
-    btnStart.addEventListener('click', async () => {
+    function handleFile(file) {
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                gameConfig.uploadedDataUrl = ev.target.result;
+                startGameFlow();
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    fileUpload.addEventListener('change', (e) => handleFile(e.target.files[0]));
+    cameraUpload.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+    async function startGameFlow() {
         // Collect settings
-        gameConfig.difficulty = parseInt(document.querySelector('input[name="difficulty"]:checked').value);
-        gameConfig.source = document.querySelector('input[name="photo-source"]:checked').value;
+        const checkedDiff = document.querySelector('input[name="difficulty"]:checked');
+        gameConfig.difficulty = checkedDiff ? parseInt(checkedDiff.value) : 3;
+        gameConfig.source = selectedSourceInput.value;
         
         let imageSrc = '';
         
-        if (gameConfig.source === 'upload' && !gameConfig.uploadedDataUrl) {
-            alert('Please select a photo first or switch to Random.');
+        if ((gameConfig.source === 'gallery' || gameConfig.source === 'camera') && !gameConfig.uploadedDataUrl) {
+            // Wait for file selection (already handled by handleFile calling startGameFlow)
             return;
         }
 
@@ -102,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
             startGame(imageSrc, gameConfig.difficulty, img.naturalWidth, img.naturalHeight);
         };
         img.src = imageSrc;
-    });
+    }
 
     function returnToMenu() {
         gameScreen.classList.remove('active');
@@ -122,10 +133,13 @@ document.addEventListener('DOMContentLoaded', () => {
     btnReturn.addEventListener('click', returnToMenu);
     
     btnRestart.addEventListener('click', () => {
-        if (document.querySelector('input[name="photo-source"]:checked').value === 'picsum') {
-            btnStart.click(); // Re-trigger random photo and start
+        const source = selectedSourceInput.value;
+        if (source === 'picsum') {
+            startGameFlow(); 
+        } else if (source === 'camera') {
+            cameraUpload.click();
         } else {
-            fileUpload.click(); // Prompt for new local photo
+            fileUpload.click();
         }
     });
 

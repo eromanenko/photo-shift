@@ -1,4 +1,4 @@
-const VERSION = '0.1.4';
+const VERSION = '0.1.9';
 const CACHE_NAME = 'photo-shift-v' + VERSION;
 const STATIC_ASSETS = [
     './',
