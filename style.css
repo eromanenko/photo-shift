@@ -56,6 +56,15 @@ h1.title span {
     color: var(--primary);
 }
 
+.version {
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--text-dim);
+    vertical-align: baseline;
+    margin-left: 0.5rem;
+    opacity: 0.7;
+}
+
 .text-center { text-align: center; }
 .mt-4 { margin-top: 1rem; }
 .mt-6 { margin-top: 1.5rem; }
@@ -86,8 +95,14 @@ h2 span { color: var(--primary); font-weight: 700; }
     height: 100%;
     display: flex;
     flex-direction: column;
-    padding: 1.5rem;
+    padding: 1rem;
     transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@media (min-width: 600px) {
+    .screen {
+        padding: 1.5rem;
+    }
 }
 
 .screen.hidden {
@@ -208,8 +223,8 @@ h2 span { color: var(--primary); font-weight: 700; }
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.5rem;
-    margin-bottom: 2vmin;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1vmin;
     border-radius: 16px;
 }
 
@@ -248,7 +263,7 @@ h2 span { color: var(--primary); font-weight: 700; }
     align-items: center;
     position: relative;
     contain: layout paint;
-    padding: 1rem;
+    padding: 0.5rem;
 }
 
 #game-board {

@@ -1,4 +1,5 @@
-const CACHE_NAME = 'photo-shift-v2';
+const VERSION = '0.1.4';
+const CACHE_NAME = 'photo-shift-v' + VERSION;
 const STATIC_ASSETS = [
     './',
     './index.html',

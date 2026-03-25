@@ -27,10 +27,10 @@ class PhotoShiftGame {
         this.container.innerHTML = ''; // clear board
         
         // Calculate dynamic dimensions preserving aspect ratio
+        // Maximize dimensions for mobile
         const parentRect = this.container.parentElement.getBoundingClientRect();
-        // Give some padding to ensure it fits comfortably within the board-container
-        const availableWidth = parentRect.width * 0.95;
-        const availableHeight = parentRect.height * 0.95;
+        const availableWidth = parentRect.width;
+        const availableHeight = parentRect.height;
         
         const imgAspect = this.imgW / this.imgH;
         let boardW = availableWidth;
@@ -91,14 +91,27 @@ class PhotoShiftGame {
         this.startOverlay.innerHTML = '<button class="primary-btn huge">SHUFFLE & PLAY</button>';
         this.container.appendChild(this.startOverlay);
         
-        this.startOverlay.querySelector('button').addEventListener('click', async (e) => {
-            // Prevent pointerdown propagation to the board
+        const playBtn = this.startOverlay.querySelector('button');
+        
+        const handleStart = async (e) => {
+            e.preventDefault();
             e.stopPropagation();
+            if (this.isStarting) return;
+            this.isStarting = true;
+            
             this.startOverlay.style.opacity = '0';
             setTimeout(() => this.startOverlay.remove(), 300);
             
             await this.shuffle();
             this.isPlaying = true;
+            this.isStarting = false;
+        };
+
+        // Use pointerup for instant response on mobile
+        playBtn.addEventListener('pointerup', handleStart);
+        // Fallback for some browsers
+        playBtn.addEventListener('click', (e) => {
+            if (!this.isStarting) handleStart(e);
         });
     }
 
@@ -126,8 +139,10 @@ class PhotoShiftGame {
         window.addEventListener('pointerup', this.onPointerUp.bind(this));
         window.addEventListener('pointercancel', this.onPointerUp.bind(this));
         
-        // Prevent default touch actions like scrolling while interacting with game
-        this.container.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+        // Prevent default touch actions like scrolling only when actively playing/dragging
+        this.container.addEventListener('touchstart', e => {
+            if (this.isPlaying) e.preventDefault();
+        }, { passive: false });
     }
 
     getTileAtEvent(e) {
