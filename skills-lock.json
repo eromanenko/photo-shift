@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "mobile-game-dev": {
+      "source": "omer-metin/skills-for-antigravity",
+      "sourceType": "github",
+      "computedHash": "0d6692e93b62406b5a91fad10512451bfdd4677314fb085fcab3ac6528e57882"
+    }
+  }
+}

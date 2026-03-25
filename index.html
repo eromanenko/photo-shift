@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Photo Shift</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- Menu Screen -->
+        <section id="menu-screen" class="screen active">
+            <h1 class="title">Photo <span>Shift</span></h1>
+            
+            <div class="glass-panel menu-panel">
+                <div class="setting-group">
+                    <label>Difficulty</label>
+                    <div class="radio-group" id="difficulty-options">
+                        <label class="radio-btn"><input type="radio" name="difficulty" value="2"> <span>Beginner (2x2)</span></label>
+                        <label class="radio-btn"><input type="radio" name="difficulty" value="3" checked> <span>Intermediate (3x3)</span></label>
+                        <label class="radio-btn"><input type="radio" name="difficulty" value="4"> <span>Advanced (4x4)</span></label>
+                        <label class="radio-btn"><input type="radio" name="difficulty" value="5"> <span>Pro (5x5)</span></label>
+                    </div>
+                </div>
+
+                <div class="setting-group mt-4">
+                    <label>Photo Source</label>
+                    <div class="radio-group">
+                        <label class="radio-btn" id="lbl-picsum"><input type="radio" name="photo-source" value="picsum" checked> <span>Random (Picsum API)</span></label>
+                        <label class="radio-btn" id="lbl-upload"><input type="radio" name="photo-source" value="upload"> <span>Upload from Device</span></label>
+                    </div>
+                    <input type="file" id="file-upload" accept="image/*" style="display:none">
+                </div>
+
+                <button id="btn-start" class="primary-btn mt-6">Start Game</button>
+            </div>
+            
+            <div class="footer-info">Drag to shift rows and columns. Reassemble the image!</div>
+        </section>
+
+        <!-- Game Screen -->
+        <section id="game-screen" class="screen hidden">
+            <header class="game-header glass-panel">
+                <div style="display: flex; gap: 0.5rem;">
+                    <button id="btn-return" class="icon-btn" title="Return to Menu">
+                        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    </button>
+                    <button id="btn-restart" class="icon-btn" title="New Photo">
+                        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                    </button>
+                </div>
+                <div class="moves">Moves: <span id="move-counter" class="highlight">0</span></div>
+                <button id="btn-hint" class="icon-btn" title="Show Hint">
+                    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                </button>
+            </header>
+
+            <div id="board-container" class="board-container">
+                <!-- Dynamically generated board will be appended here -->
+                <div id="game-board"></div>
+            </div>
+            
+            <div id="loading-overlay" class="overlay hidden glass-panel">
+                <div class="spinner"></div>
+                <p>Loading image...</p>
+            </div>
+        </section>
+
+        <!-- Hint Modal -->
+        <div id="hint-modal" class="modal hidden">
+            <div class="modal-content glass-panel">
+                <h2>Hint: <span>Original Image</span></h2>
+                <div class="image-wrapper">
+                    <img id="hint-image-view" src="" alt="Hint">
+                </div>
+                <button id="btn-close-hint" class="primary-btn mt-4">Close Hint</button>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div id="success-modal" class="modal hidden">
+            <div class="modal-content glass-panel text-center">
+                <h2>Puzzle <span>Solved!</span> 🎉</h2>
+                <p>You completed the image in <br><span id="final-moves" class="highlight huge">0</span> moves.</p>
+                <button id="btn-play-again" class="primary-btn mt-6">Play Again</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="game.js"></script>
+    <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('SW Registered', reg.scope))
+                .catch(err => console.error('SW Registration failed', err));
+            });
+        }
+    </script>
+</body>
+</html>

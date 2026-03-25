@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#0f172a"/>
+  
+  <g transform="translate(106, 106)">
+    <!-- Top-Left -->
+    <rect x="0" y="0" width="130" height="130" rx="24" fill="#0ea5e9"/>
+    <!-- Top-Right (sliding right) -->
+    <rect x="170" y="0" width="130" height="130" rx="24" fill="#1e293b"/>
+    <!-- Bottom-Left -->
+    <rect x="0" y="170" width="130" height="130" rx="24" fill="#1e293b"/>
+    <!-- Bottom-Right -->
+    <rect x="170" y="170" width="130" height="130" rx="24" fill="#10b981"/>
+    
+    <!-- Arrow indicating slide -->
+    <path d="M 220 65 L 280 65 M 250 35 L 280 65 L 250 95" stroke="#fff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.5"/>
+  </g>
+</svg>
