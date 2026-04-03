@@ -12,6 +12,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedSourceInput = document.getElementById('selected-source');
     const moveCounter = document.getElementById('move-counter');
     
+    // Audio Hook
+    const btnSound = document.getElementById('btn-sound');
+    const iconSoundOn = document.getElementById('icon-sound-on');
+    const iconSoundOff = document.getElementById('icon-sound-off');
+    
+    if (btnSound) {
+        btnSound.addEventListener('click', () => {
+            if (window.audioEngine) {
+                const isEnabled = window.audioEngine.toggle();
+                iconSoundOn.style.display = isEnabled ? 'block' : 'none';
+                iconSoundOff.style.display = isEnabled ? 'none' : 'block';
+            }
+        });
+    }
+    
     // Modals
     const hintModal = document.getElementById('hint-modal');
     const btnCloseHint = document.getElementById('btn-close-hint');
@@ -68,6 +83,9 @@ document.addEventListener('DOMContentLoaded', () => {
     cameraUpload.addEventListener('change', (e) => handleFile(e.target.files[0]));
 
     async function startGameFlow() {
+        // Init audio context on user interaction
+        if (window.audioEngine) window.audioEngine.init();
+        
         // Collect settings
         const checkedDiff = document.querySelector('input[name="difficulty"]:checked');
         gameConfig.difficulty = checkedDiff ? parseInt(checkedDiff.value) : 3;
@@ -154,9 +172,39 @@ document.addEventListener('DOMContentLoaded', () => {
             onMove: (moves) => {
                 moveCounter.innerText = moves;
             },
+            onSnap: () => {
+                if (window.audioEngine) window.audioEngine.playSnap();
+                if (navigator.vibrate) navigator.vibrate(10);
+            },
             onWin: (moves) => {
                 finalMoves.innerText = moves;
+                document.getElementById('final-difficulty').innerText = `${diff}x${diff}`;
+                document.getElementById('success-image-view').src = imgSrc;
                 successModal.classList.remove('hidden');
+                
+                if (window.audioEngine) window.audioEngine.playWin();
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
+                if (window.confetti) {
+                    const duration = 2000;
+                    const end = Date.now() + duration;
+                    (function frame() {
+                        confetti({
+                            particleCount: 5,
+                            angle: 60,
+                            spread: 55,
+                            origin: { x: 0 },
+                            colors: ['#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6']
+                        });
+                        confetti({
+                            particleCount: 5,
+                            angle: 120,
+                            spread: 55,
+                            origin: { x: 1 },
+                            colors: ['#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6']
+                        });
+                        if (Date.now() < end) requestAnimationFrame(frame);
+                    }());
+                }
             }
         });
     }
@@ -174,6 +222,33 @@ document.addEventListener('DOMContentLoaded', () => {
         successModal.classList.add('hidden');
         returnToMenu();
     });
+
+    const btnShare = document.getElementById('btn-share');
+    if (btnShare) {
+        btnShare.addEventListener('click', async () => {
+            try {
+                const diff = document.getElementById('final-difficulty').innerText;
+                const moves = finalMoves.innerText;
+                const shareData = {
+                    title: 'Photo Shift',
+                    text: `I solved a ${diff} Photo Shift puzzle in ${moves} moves! Can you beat my score?`,
+                    url: 'https://photo-shift.netlify.app/'
+                };
+                if (navigator.share) {
+                    await navigator.share(shareData).catch(err => {
+                        if (err.name !== 'AbortError') console.error('Share failed:', err);
+                    });
+                } else {
+                    await navigator.clipboard.writeText(`${shareData.text} Play here: ${shareData.url}`);
+                    const originalText = btnShare.innerHTML;
+                    btnShare.innerHTML = 'Copied to clipboard!';
+                    setTimeout(() => { btnShare.innerHTML = originalText; }, 2000);
+                }
+            } catch (err) {
+                console.error('Error sharing', err);
+            }
+        });
+    }
 
     // Close modals on background click
     [hintModal, successModal].forEach(modal => {

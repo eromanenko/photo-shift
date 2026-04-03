@@ -1,4 +1,4 @@
-const VERSION = '0.1.9';
+const VERSION = '0.3.0';
 const CACHE_NAME = 'photo-shift-v' + VERSION;
 const STATIC_ASSETS = [
     './',
@@ -6,8 +6,10 @@ const STATIC_ASSETS = [
     './style.css',
     './app.js',
     './game.js',
+    './audio.js',
     './manifest.json',
     './icon.svg',
+    'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js',
     'https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap'
 ];
 

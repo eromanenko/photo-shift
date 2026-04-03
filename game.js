@@ -7,6 +7,7 @@ class PhotoShiftGame {
         this.imgH = options.imgH || 800;
         this.onMoveCallback = options.onMove || (() => {});
         this.onWinCallback = options.onWin || (() => {});
+        this.onSnapCallback = options.onSnap || (() => {});
         
         this.moves = 0;
         this.tiles = [];
@@ -19,18 +20,34 @@ class PhotoShiftGame {
         this.startPos = { x: 0, y: 0 };
         this.currentOffset = 0;
         this.activeTiles = [];
+        this.activeClones = null;
         
+        // Find or create wrapper element
+        const parentContainer = this.container.parentElement;
+        this.gameWrapper = parentContainer.querySelector('.game-wrapper');
+        if (!this.gameWrapper) {
+            this.gameWrapper = document.createElement('div');
+            this.gameWrapper.className = 'game-wrapper';
+            parentContainer.insertBefore(this.gameWrapper, this.container);
+            this.gameWrapper.appendChild(this.container);
+        } else {
+            const oldControls = this.gameWrapper.querySelectorAll('.desktop-controls');
+            oldControls.forEach(c => c.remove());
+        }
+
         this.init();
     }
 
     async init() {
         this.container.innerHTML = ''; // clear board
         
-        // Calculate dynamic dimensions preserving aspect ratio
-        // Maximize dimensions for mobile
-        const parentRect = this.container.parentElement.getBoundingClientRect();
-        const availableWidth = parentRect.width;
-        const availableHeight = parentRect.height;
+        const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+        const controlSpace = isDesktop ? 80 : 0; // 40px each side
+        
+        // Calculate dynamic dimensions preserving aspect ratio using the parent element (not wrapper)
+        const parentRect = this.gameWrapper.parentElement.getBoundingClientRect();
+        const availableWidth = parentRect.width - controlSpace;
+        const availableHeight = parentRect.height - controlSpace;
         
         const imgAspect = this.imgW / this.imgH;
         let boardW = availableWidth;
@@ -47,6 +64,10 @@ class PhotoShiftGame {
         this.container.style.width = `${boardW}px`;
         this.container.style.height = `${boardH}px`;
         
+        this.gameWrapper.style.width = `${boardW}px`;
+        this.gameWrapper.style.height = `${boardH}px`;
+        this.gameWrapper.style.position = 'relative';
+
         this.tileW = this.boardWidth / this.size;
         this.tileH = this.boardHeight / this.size;
 
@@ -82,7 +103,102 @@ class PhotoShiftGame {
         this.updateVisuals(false);
         this.setupEvents();
         
+        if (isDesktop) {
+            this.createDesktopControls();
+        }
+        
         this.createStartOverlay();
+    }
+
+    createDesktopControls() {
+        const svgArrowLeft = `<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><polyline points="15 18 9 12 15 6"></polyline></svg>`;
+        const svgArrowRight = `<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
+        const svgArrowUp = `<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><polyline points="18 15 12 9 6 15"></polyline></svg>`;
+        const svgArrowDown = `<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
+
+        const createContainer = (className) => {
+            const el = document.createElement('div');
+            el.className = `desktop-controls ${className}`;
+            this.gameWrapper.appendChild(el);
+            return el;
+        };
+
+        const leftControls = createContainer('controls-left');
+        const rightControls = createContainer('controls-right');
+        const topControls = createContainer('controls-top');
+        const bottomControls = createContainer('controls-bottom');
+
+        const triggerMove = (type, index, amount) => {
+            if (!this.isPlaying || this.isDragging) return;
+            
+            this.isDragging = true;
+            this.dragType = type;
+            this.dragIndex = index;
+            if (type === 'row') {
+                this.activeTiles = this.tiles.filter(t => t.row === index);
+            } else {
+                this.activeTiles = this.tiles.filter(t => t.col === index);
+            }
+            this.createClones();
+            
+            const targetOffset = type === 'row' ? amount * this.tileW : amount * this.tileH;
+            let startTime = null;
+            const duration = 200; // ms
+            
+            const animate = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const progress = Math.min((timestamp - startTime) / duration, 1);
+                
+                // Ease out quad
+                const ease = 1 - (1 - progress) * (1 - progress);
+                this.currentOffset = targetOffset * ease;
+                
+                this.renderDrag();
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    this.currentOffset = targetOffset;
+                    this.finalizeDrag(amount);
+                    
+                    this.isDragging = false;
+                    this.dragType = null;
+                    this.activeTiles = [];
+                    this.updateVisuals(true);
+                }
+            };
+            requestAnimationFrame(animate);
+        };
+
+        for (let i = 0; i < this.size; i++) {
+            const leftBtn = document.createElement('button');
+            leftBtn.className = 'control-arrow vertical-btn';
+            leftBtn.innerHTML = svgArrowLeft;
+            leftBtn.style.height = `${this.tileH}px`;
+            leftBtn.addEventListener('click', () => triggerMove('row', i, -1));
+            leftControls.appendChild(leftBtn);
+            
+            const rightBtn = document.createElement('button');
+            rightBtn.className = 'control-arrow vertical-btn';
+            rightBtn.innerHTML = svgArrowRight;
+            rightBtn.style.height = `${this.tileH}px`;
+            rightBtn.addEventListener('click', () => triggerMove('row', i, 1));
+            rightControls.appendChild(rightBtn);
+            
+            const topBtn = document.createElement('button');
+            topBtn.className = 'control-arrow horizontal-btn';
+            topBtn.innerHTML = svgArrowUp;
+            topBtn.style.width = `${this.tileW}px`;
+            topBtn.addEventListener('click', () => triggerMove('col', i, -1));
+            topControls.appendChild(topBtn);
+            
+            const bottomBtn = document.createElement('button');
+            bottomBtn.className = 'control-arrow horizontal-btn';
+            bottomBtn.innerHTML = svgArrowDown;
+            bottomBtn.style.width = `${this.tileW}px`;
+            bottomBtn.addEventListener('click', () => triggerMove('col', i, 1));
+            bottomControls.appendChild(bottomBtn);
+        }
     }
 
     createStartOverlay() {
@@ -193,6 +309,7 @@ class PhotoShiftGame {
                     this.dragIndex = this.dragOriginTile.col;
                     this.activeTiles = this.tiles.filter(t => t.col === this.dragIndex);
                 }
+                this.createClones();
             } else {
                 return; // Not moved enough to lock
             }
@@ -208,44 +325,104 @@ class PhotoShiftGame {
         this.renderDrag();
     }
 
+    createClones() {
+        this.activeClones = [];
+        this.activeTiles.forEach(t => {
+            const clone = t.el.cloneNode(true);
+            clone.style.transition = 'none';
+            this.container.appendChild(clone);
+            this.activeClones.push({ tile: t, el: clone });
+        });
+    }
+
     renderDrag() {
         const maxXOffset = this.boardWidth;
         const maxYOffset = this.boardHeight;
         
-        this.activeTiles.forEach(tile => {
-            let x = tile.col * this.tileW;
-            let y = tile.row * this.tileH;
+        this.activeTiles.forEach((tile, index) => {
+            let originalX = tile.col * this.tileW;
+            let originalY = tile.row * this.tileH;
+            
+            let cloneInfo = this.activeClones ? this.activeClones[index] : null;
+            let clone = cloneInfo ? cloneInfo.el : null;
             
             if (this.dragType === 'row') {
-                let offset = this.currentOffset % maxXOffset;
-                x += offset;
-                // Wrapping visuals
-                if (x >= this.boardWidth) x -= this.boardWidth;
-                else if (x < 0) x += this.boardWidth;
+                let realX = originalX + this.currentOffset;
+                tile.el.style.transform = `translate(${realX}px, ${originalY}px)`;
                 
-                // Extra wrap check for smooth continuous drag of extreme tiles
-                if (offset > 0 && tile.col === this.size - 1 && x > this.boardWidth - this.tileW) {
-                   x -= this.boardWidth; 
-                }
-                if (offset < 0 && tile.col === 0 && x < 0) {
-                   x += this.boardWidth;
+                if (clone) {
+                    let offsetMod = this.currentOffset % maxXOffset;
+                    let cloneX = realX;
+                    if (offsetMod > 0) cloneX -= maxXOffset;
+                    else cloneX += maxXOffset;
+                    clone.style.transform = `translate(${cloneX}px, ${originalY}px)`;
                 }
             } else {
-                let offset = this.currentOffset % maxYOffset;
-                y += offset;
-                if (y >= this.boardHeight) y -= this.boardHeight;
-                else if (y < 0) y += this.boardHeight;
+                let realY = originalY + this.currentOffset;
+                tile.el.style.transform = `translate(${originalX}px, ${realY}px)`;
                 
-                if (offset > 0 && tile.row === this.size - 1 && y > this.boardHeight - this.tileH) {
-                   y -= this.boardHeight;
-                }
-                if (offset < 0 && tile.row === 0 && y < 0) {
-                   y += this.boardHeight;
+                if (clone) {
+                    let offsetMod = this.currentOffset % maxYOffset;
+                    let cloneY = realY;
+                    if (offsetMod > 0) cloneY -= maxYOffset;
+                    else cloneY += maxYOffset;
+                    clone.style.transform = `translate(${originalX}px, ${cloneY}px)`;
                 }
             }
-            
-            tile.el.style.transform = `translate(${x}px, ${y}px)`;
         });
+    }
+
+    finalizeDrag(shiftAmount) {
+        if (this.activeClones) {
+            this.activeClones.forEach(c => c.el.remove());
+            this.activeClones = null;
+        }
+
+        let oldColRow = this.activeTiles.map(t => ({ t, col: t.col, row: t.row }));
+        
+        if (shiftAmount !== 0) {
+            if (this.dragType === 'row') this.shiftRow(this.dragIndex, shiftAmount);
+            else this.shiftCol(this.dragIndex, shiftAmount);
+        }
+
+        // Snap Healing
+        this.activeTiles.forEach((t, i) => {
+            let old = oldColRow[i];
+            t.el.style.transition = 'none';
+            
+            if (this.dragType === 'row') {
+                let realX = old.col * this.tileW + this.currentOffset;
+                let offsetMod = this.currentOffset % this.boardWidth;
+                let cloneX = realX;
+                if (offsetMod > 0) cloneX -= this.boardWidth;
+                else cloneX += this.boardWidth;
+                
+                let newX = t.col * this.tileW;
+                let preSnapX = Math.abs(realX - newX) < Math.abs(cloneX - newX) ? realX : cloneX;
+                
+                t.el.style.transform = `translate(${preSnapX}px, ${t.row * this.tileH}px)`;
+            } else {
+                let realY = old.row * this.tileH + this.currentOffset;
+                let offsetMod = this.currentOffset % this.boardHeight;
+                let cloneY = realY;
+                if (offsetMod > 0) cloneY -= this.boardHeight;
+                else cloneY += this.boardHeight;
+                
+                let newY = t.row * this.tileH;
+                let preSnapY = Math.abs(realY - newY) < Math.abs(cloneY - newY) ? realY : cloneY;
+                
+                t.el.style.transform = `translate(${t.col * this.tileW}px, ${preSnapY}px)`;
+            }
+            
+            void t.el.offsetWidth; // Force reflow
+        });
+        
+        if (shiftAmount !== 0) {
+            this.onSnapCallback();
+            this.moves++;
+            this.onMoveCallback(this.moves);
+            this.checkWin();
+        }
     }
 
     onPointerUp(e) {
@@ -259,22 +436,12 @@ class PhotoShiftGame {
             if (this.dragType === 'row') {
                 let ratio = this.currentOffset / this.tileW;
                 shiftAmount = Math.sign(ratio) * Math.floor(Math.abs(ratio) + (1 - snapThreshold));
-                if (shiftAmount !== 0) {
-                    this.shiftRow(this.dragIndex, shiftAmount);
-                }
             } else {
                 let ratio = this.currentOffset / this.tileH;
                 shiftAmount = Math.sign(ratio) * Math.floor(Math.abs(ratio) + (1 - snapThreshold));
-                if (shiftAmount !== 0) {
-                    this.shiftCol(this.dragIndex, shiftAmount);
-                }
             }
             
-            if (shiftAmount !== 0) {
-                this.moves++;
-                this.onMoveCallback(this.moves);
-                this.checkWin();
-            }
+            this.finalizeDrag(shiftAmount);
         }
         
         this.isDragging = false;
