@@ -46,6 +46,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Menu Event Listeners ---
     // --- Source Selection logic ---
+    function generateLettersImage(difficulty) {
+        const W = 800; // Fixed canvas size matching standard expected dimensions
+        const H = 800;
+        const canvas = document.createElement('canvas');
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext('2d');
+        
+        const tileW = W / difficulty;
+        const tileH = H / difficulty;
+        
+        let letterIndex = 0;
+        
+        for (let r = 0; r < difficulty; r++) {
+            for (let c = 0; c < difficulty; c++) {
+                // Determine color by normalizing coordinates
+                const x = difficulty > 1 ? c / (difficulty - 1) : 0.5;
+                const y = difficulty > 1 ? r / (difficulty - 1) : 0.5;
+                
+                const rColor = Math.round(255 * (1 - x));
+                // Make the bottom-right Green darker (e.g. 150) so transition from Yellow is stronger
+                const gColor = Math.round(y * (255 - 105 * x));
+                const bColor = Math.round(255 * x * (1 - y));
+                
+                ctx.fillStyle = `rgb(${rColor}, ${gColor}, ${bColor})`;
+                ctx.fillRect(c * tileW, r * tileH, tileW, tileH);
+                
+                // Draw letter
+                ctx.fillStyle = '#ffffff'; 
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                // Canvas font property does not support CSS variables directly; using explicit font names
+                ctx.font = `bold ${Math.floor(tileH * 0.45)}px 'Outfit', system-ui, sans-serif`;
+                
+                // Add soft shadow to improve contrast over bright colors
+                ctx.shadowColor = 'rgba(0,0,0,0.6)';
+                ctx.shadowBlur = 8;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 2;
+                
+                const letter = String.fromCharCode(65 + letterIndex);
+                ctx.fillText(letter, (c + 0.5) * tileW, (r + 0.5) * tileH);
+                
+                ctx.shadowColor = 'transparent';
+                letterIndex++;
+            }
+        }
+        
+        return canvas.toDataURL('image/jpeg', 0.9);
+    }
+
     function setSource(source) {
         selectedSourceInput.value = source;
     }
@@ -62,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 cameraUpload.click();
             } else if (source === 'gallery') {
                 fileUpload.click();
-            } else if (source === 'picsum') {
+            } else if (source === 'picsum' || source === 'letters') {
                 startGameFlow();
             }
         });
@@ -105,7 +156,9 @@ document.addEventListener('DOMContentLoaded', () => {
         gameScreen.classList.add('active');
         loadingOverlay.classList.remove('hidden');
 
-        if (gameConfig.source === 'picsum') {
+        if (gameConfig.source === 'letters') {
+            imageSrc = generateLettersImage(gameConfig.difficulty);
+        } else if (gameConfig.source === 'picsum') {
             // Need a cache-busting URL to ensure new random image
             // We fetch the image, convert to blob url to ensure it loads cleanly
             try {
@@ -143,6 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
         hintModal.classList.add('hidden');
         
         if (currentGame) {
+            currentGame.destroy();
             currentGame.container.innerHTML = '';
             currentGame = null;
         }
@@ -152,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     btnRestart.addEventListener('click', () => {
         const source = selectedSourceInput.value;
-        if (source === 'picsum') {
+        if (source === 'picsum' || source === 'letters') {
             startGameFlow(); 
         } else if (source === 'camera') {
             cameraUpload.click();
@@ -163,6 +217,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Game Logic Bindings ---
     function startGame(imgSrc, diff, imgW, imgH) {
+        if (currentGame) {
+            currentGame.destroy();
+        }
         moveCounter.innerText = '0';
         currentGame = new PhotoShiftGame('game-board', {
             imageSrc: imgSrc,

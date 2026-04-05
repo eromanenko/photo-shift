@@ -244,6 +244,7 @@ h2 span { color: var(--primary); font-weight: 700; }
 .source-card[id="card-camera"] .card-icon { color: #f59e0b; }
 .source-card[id="card-gallery"] .card-icon { color: #10b981; }
 .source-card[id="card-picsum"] .card-icon { color: #8b5cf6; }
+.source-card[id="card-letters"] .card-icon { color: #ef4444; }
 
 .source-card.active .card-icon {
     color: white !important;

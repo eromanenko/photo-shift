@@ -23,16 +23,16 @@ class PhotoShiftGame {
         this.activeClones = null;
         
         // Find or create wrapper element
-        const parentContainer = this.container.parentElement;
-        this.gameWrapper = parentContainer.querySelector('.game-wrapper');
-        if (!this.gameWrapper) {
+        if (this.container.parentElement.classList.contains('game-wrapper')) {
+            this.gameWrapper = this.container.parentElement;
+            const oldControls = this.gameWrapper.querySelectorAll('.desktop-controls');
+            oldControls.forEach(c => c.remove());
+        } else {
+            const parentContainer = this.container.parentElement;
             this.gameWrapper = document.createElement('div');
             this.gameWrapper.className = 'game-wrapper';
             parentContainer.insertBefore(this.gameWrapper, this.container);
             this.gameWrapper.appendChild(this.container);
-        } else {
-            const oldControls = this.gameWrapper.querySelectorAll('.desktop-controls');
-            oldControls.forEach(c => c.remove());
         }
 
         this.init();
@@ -44,10 +44,22 @@ class PhotoShiftGame {
         const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
         const controlSpace = isDesktop ? 80 : 0; // 40px each side
         
-        // Calculate dynamic dimensions preserving aspect ratio using the parent element (not wrapper)
-        const parentRect = this.gameWrapper.parentElement.getBoundingClientRect();
-        const availableWidth = parentRect.width - controlSpace;
-        const availableHeight = parentRect.height - controlSpace;
+        const parentContainer = this.gameWrapper.parentElement;
+        
+        // Temporarily hide the wrapper to measure true available space 
+        // without feedback loop from previous explicit heights
+        this.gameWrapper.style.display = 'none';
+        
+        const computedStyle = window.getComputedStyle(parentContainer);
+        const paddingX = (parseFloat(computedStyle.paddingLeft) || 0) + (parseFloat(computedStyle.paddingRight) || 0);
+        const paddingY = (parseFloat(computedStyle.paddingTop) || 0) + (parseFloat(computedStyle.paddingBottom) || 0);
+        
+        // Use offsetWidth/offsetHeight instead of getBoundingClientRect()
+        // to get the true layout size, ignoring CSS scale() transitions
+        const availableWidth = parentContainer.offsetWidth - paddingX - controlSpace;
+        const availableHeight = parentContainer.offsetHeight - paddingY - controlSpace;
+        
+        this.gameWrapper.style.display = '';
         
         const imgAspect = this.imgW / this.imgH;
         let boardW = availableWidth;
@@ -249,16 +261,30 @@ class PhotoShiftGame {
     }
 
     setupEvents() {
+        this._boundPointerDown = this.onPointerDown.bind(this);
+        this._boundPointerMove = this.onPointerMove.bind(this);
+        this._boundPointerUp = this.onPointerUp.bind(this);
+        this._boundTouchStart = e => { if (this.isPlaying) e.preventDefault(); };
+
         // Pointer events for uniform touch/mouse handling
-        this.container.addEventListener('pointerdown', this.onPointerDown.bind(this));
-        window.addEventListener('pointermove', this.onPointerMove.bind(this));
-        window.addEventListener('pointerup', this.onPointerUp.bind(this));
-        window.addEventListener('pointercancel', this.onPointerUp.bind(this));
+        this.container.addEventListener('pointerdown', this._boundPointerDown);
+        window.addEventListener('pointermove', this._boundPointerMove);
+        window.addEventListener('pointerup', this._boundPointerUp);
+        window.addEventListener('pointercancel', this._boundPointerUp);
         
         // Prevent default touch actions like scrolling only when actively playing/dragging
-        this.container.addEventListener('touchstart', e => {
-            if (this.isPlaying) e.preventDefault();
-        }, { passive: false });
+        this.container.addEventListener('touchstart', this._boundTouchStart, { passive: false });
+    }
+
+    destroy() {
+        this.isPlaying = false;
+        if (this._boundPointerDown) {
+            this.container.removeEventListener('pointerdown', this._boundPointerDown);
+            window.removeEventListener('pointermove', this._boundPointerMove);
+            window.removeEventListener('pointerup', this._boundPointerUp);
+            window.removeEventListener('pointercancel', this._boundPointerUp);
+            this.container.removeEventListener('touchstart', this._boundTouchStart);
+        }
     }
 
     getTileAtEvent(e) {
@@ -316,10 +342,11 @@ class PhotoShiftGame {
         }
         
         // Calculate offset and visual wrapping
+        // Clamp currentOffset to prevent visual dragging beyond 1 tile
         if (this.dragType === 'row') {
-            this.currentOffset = dx;
+            this.currentOffset = Math.max(-this.tileW, Math.min(this.tileW, dx));
         } else {
-            this.currentOffset = dy;
+            this.currentOffset = Math.max(-this.tileH, Math.min(this.tileH, dy));
         }
         
         this.renderDrag();
@@ -440,6 +467,9 @@ class PhotoShiftGame {
                 let ratio = this.currentOffset / this.tileH;
                 shiftAmount = Math.sign(ratio) * Math.floor(Math.abs(ratio) + (1 - snapThreshold));
             }
+            
+            // Clamp shift amount to maximum 1 tile
+            shiftAmount = Math.max(-1, Math.min(1, shiftAmount));
             
             this.finalizeDrag(shiftAmount);
         }
