@@ -18,7 +18,7 @@ d' - r3←; d - r3→
 l' - c2↑; l - c2↓
 u' - r2←; u - r2→
 
-
+MNOP: Already solved
 MNPO: R' D2 R D R' D R D
 MONP: R' D' R D' R' D2 R D'
 MOPN: R' D2 R D' R' D' R
@@ -44,8 +44,73 @@ POMN: R' D' R D2 R' D' R D
 PONM: R' D R D' R' D2 R D R' D' R
 
 
+---------------------------------------5x5----------------------------------------
 ABCDE
 FGHIJ
 KLMNO
 PQRST
 UVWXY
+
+--- 5x5 Last Row Algorithms ---
+Note: Only 60 even permutations are possible.
+
+UVWXY: Already solved
+UVXYW: l' D l D l' D'2 l D
+UVYWX: m' D'2 m D m' D m D D'
+UWVYX: l' D l D l' D'2 l D L' D L D L' D'2 L D
+UWXVY: L' D L D L' D'2 L D
+UWYXV: L' D'2 L D L' D L D l' D l D l' D'2 l D D
+UXVWY: l' D'2 l D l' D l D D'
+UXWYV: m' D'2 m D m' D m D l' D'2 l D l' D l D D
+UXYVW: L' D L D L' D'2 L D l' D l D l' D'2 l D
+UYVXW: l' D'2 l D l' D l D L' D'2 L D L' D L D D'
+UYWVX: L' D L D L' D'2 L D m' D'2 m D m' D m D D'
+UYXWV: L' D'2 L D L' D L D l' D l D l' D'2 l D l' D'2 l D l' D l D
+VUWYX: l' D'2 l D l' D l D L' D'2 L D L' D L D
+VUXWY: L' D L D L' D'2 L D m' D'2 m D m' D m D
+VUYXW: l' D l D l' D'2 l D l' D'2 l D l' D l D L' D'2 L D L' D L D
+VWUXY: m' D'2 m D m' D m D
+VWXYU: D
+VWYUX: l' D l D l' D'2 l D D
+VXUYW: m' D'2 m D m' D m D l' D l D l' D'2 l D
+VXWUY: l' D l D l' D'2 l D L' D L D L' D'2 L D D
+VXYWU: L' D L D L' D'2 L D D
+VYUWX: L' D L D L' D'2 L D l' D l D l' D'2 l D D
+VYWXU: l' D'2 l D l' D l D
+VYXUW: l' D l D l' D'2 l D l' D'2 l D l' D l D
+WUVXY: L' D'2 L D L' D L D D'
+WUXYV: l' D'2 l D l' D l D D
+WUYVX: l' D l D l' D'2 l D l' D'2 l D l' D l D D
+WVUYX: m' D'2 m D m' D m D l' D l D l' D'2 l D L' D L D L' D'2 L D
+WVXUY: l' D'2 l D l' D l D L' D'2 L D L' D L D D
+WVYXU: L' D L D L' D'2 L D m' D'2 m D m' D m D D
+WXUVY: m' D'2 m D m' D m D L' D L D L' D'2 L D
+WXVYU: m' D'2 m D m' D m D D
+WXYUV: D D
+WYUXV: l' D'2 l D l' D l D m' D'2 m D m' D m D
+WYVUX: m' D'2 m D m' D m D l' D l D l' D'2 l D D
+WYXVU: l' D'2 l D l' D l D L' D L D L' D'2 L D
+XUVYW: l' D'2 l D l' D l D m' D'2 m D m' D m D D
+XUWVY: L' D'2 L D L' D L D l' D l D l' D'2 l D D'
+XUYWV: l' D'2 l D l' D l D L' D L D L' D'2 L D D
+XVUWY: m' D'2 m D m' D m D l' D'2 l D l' D l D D'
+XVWYU: L' D'2 L D L' D L D
+XVYUW: l' D l D l' D'2 l D L' D'2 L D L' D L D
+XWUYV: L' D'2 L D L' D L D m' D'2 m D m' D m D
+XWVUY: l' D l D l' D'2 l D L' D L D L' D'2 L D L' D'2 L D L' D L D
+XWYVU: L' D L D L' D'2 L D L' D'2 L D L' D L D
+XYUVW: D' D'
+XYVWU: m' D'2 m D m' D m D L' D L D L' D'2 L D D
+XYWUV: L' D'2 L D L' D L D l' D'2 l D l' D l D
+YUVWX: D'
+YUWXV: l' D l D l' D'2 l D D'
+YUXVW: L' D'2 L D L' D L D l' D'2 l D l' D l D D
+YVUXW: l' D l D l' D'2 l D L' D L D L' D'2 L D D'
+YVWUX: L' D L D L' D'2 L D D'
+YVXWU: L' D'2 L D L' D L D l' D l D l' D'2 l D
+YWUVX: l' D l D l' D'2 l D L' D'2 L D L' D L D D
+YWVXU: m' D'2 m D m' D m D l' D'2 l D l' D l D
+YWXUV: L' D'2 L D L' D L D D
+YXUWV: L' D L D L' D'2 L D L' D'2 L D L' D L D D
+YXVUW: L' D'2 L D L' D L D m' D'2 m D m' D m D D
+YXWVU: m' D'2 m D m' D m D l' D'2 l D l' D l D L' D L D L' D'2 L D

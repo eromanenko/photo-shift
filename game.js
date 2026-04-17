@@ -51,9 +51,10 @@ class PhotoShiftGame {
     }
 
     async loadSolutions() {
-        if (this.size !== 4) return;
+        if (this.size !== 4 && this.size !== 5) return;
         try {
-            const response = await fetch('solutions4x4.json');
+            const fileName = this.size === 4 ? 'solutions4x4.json' : 'solutions5x5.json';
+            const response = await fetch(fileName);
             this.solutions = await response.json();
             this.updateSolveHintUI();
         } catch (err) {
@@ -498,7 +499,7 @@ class PhotoShiftGame {
         const overlay = this.hintOverlay;
         if (!btn || !overlay) return;
 
-        if (this.size !== 4 || !this.isPlaying) {
+        if ((this.size !== 4 && this.size !== 5) || !this.isPlaying) {
             btn.classList.add('hidden');
             overlay.classList.add('hidden');
             return;
@@ -523,8 +524,8 @@ class PhotoShiftGame {
     }
 
     isTopRowsSolved() {
-        // First 3 rows of 4x4: IDs 0 to 11
-        for (let i = 0; i < 12; i++) {
+        const tilesToCheck = this.size === 4 ? 12 : 20; // 3 rows for 4x4, 4 rows for 5x5
+        for (let i = 0; i < tilesToCheck; i++) {
             const tile = this.tiles.find(t => t.id === i);
             if (!tile || tile.row !== tile.correctRow || tile.col !== tile.correctCol) return false;
         }
@@ -544,15 +545,20 @@ class PhotoShiftGame {
 
         // Get last row state
         const lastRowTiles = [];
-        for (let c = 0; c < 4; c++) {
-            const tile = this.tiles.find(t => t.row === 3 && t.col === c);
+        const lastRowIdx = this.size - 1;
+        for (let c = 0; c < this.size; c++) {
+            const tile = this.tiles.find(t => t.row === lastRowIdx && t.col === c);
             lastRowTiles.push(tile);
         }
 
-        const tileToChar = { 12: 'M', 13: 'N', 14: 'O', 15: 'P' };
+        const tileToChar = this.size === 4 
+            ? { 12: 'M', 13: 'N', 14: 'O', 15: 'P' }
+            : { 20: 'U', 21: 'V', 22: 'W', 23: 'X', 24: 'Y' };
+            
+        const solvedState = this.size === 4 ? 'MNOP' : 'UVWXY';
         const state = lastRowTiles.map(t => tileToChar[t.id] || '?').join('');
 
-        if (state === 'MNOP' || state.includes('?')) {
+        if (state === solvedState || state.includes('?')) {
             this.solveAlgorithm = null;
             return;
         }
@@ -565,12 +571,12 @@ class PhotoShiftGame {
         this.solveStates = [];
 
         // Simulate states
-        let virtualGrid = Array.from({length: 4}, () => Array(4).fill(0));
+        let virtualGrid = Array.from({length: this.size}, () => Array(this.size).fill(0));
         this.tiles.forEach(t => virtualGrid[t.row][t.col] = t.id);
 
         const getGridStr = (grid) => grid.map(r => r.join(',')).join(';');
         const shiftVirtual = (grid, type, idx, amt) => {
-            const size = 4;
+            const size = this.size;
             amt = ((amt % size) + size) % size;
             if (type === 0) { // row
                 const row = grid[idx];
@@ -593,7 +599,7 @@ class PhotoShiftGame {
     }
 
     processHint() {
-        if (this.size !== 4) return;
+        if (this.size !== 4 && this.size !== 5) return;
 
         // If not already in an algorithm, try to start one
         if (!this.solveAlgorithm && this.isTopRowsSolved()) {
