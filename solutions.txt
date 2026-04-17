@@ -1,0 +1,51 @@
+ABCD
+EFGH
+IJKL
+MNOP
+
+    c1  c2  c3  c4
+r1  A   B   C   D
+r2  E   F   G   H
+r3  I   J   K   L
+r4  M   N   O   P
+
+R' - c4↑; R - c4↓
+D' - r4←; D - r4→
+L' - c1↑; L - c1↓
+U' - r1←; U - r1→
+r' - c3↑; r - c3↓
+d' - r3←; d - r3→
+l' - c2↑; l - c2↓
+u' - r2←; u - r2→
+
+
+MNPO: R' D2 R D R' D R D
+MONP: R' D' R D' R' D2 R D'
+MOPN: R' D2 R D' R' D' R
+MPNO: R' D R D R' D2 R
+MPON: R' D' R D R' D R D R' D' R
+NMOP: R' D' R D2 R' D' R D'
+NMPO: R' D R D' R' D' R D' R' D R D
+NOPM: D
+NOMP: r' D2 r D' r' D' r
+NPMO: D' R' D2 R D R' D R
+NPOM: R' D' R D' R' D2 R
+OMNP: r' D r D r' D2 r
+OMPN: R' D R D2 R' D R D'
+ONMP: r' D' r D r' D r D r' D' r
+ONPM: R' D' R D2 R' D' R
+OPMN: D2
+OPNM: R' D2 R D R' D R D'
+PMNO: D'
+PMON: R' D2 R D R' D R
+PNMO: R' D R D2 R' D R
+PNOM: R' D2 R D' R' D' R D'
+POMN: R' D' R D2 R' D' R D
+PONM: R' D R D' R' D2 R D R' D' R
+
+
+ABCDE
+FGHIJ
+KLMNO
+PQRST
+UVWXY

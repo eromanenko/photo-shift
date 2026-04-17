@@ -195,6 +195,11 @@ document.addEventListener('DOMContentLoaded', () => {
         successModal.classList.add('hidden');
         hintModal.classList.add('hidden');
         
+        if (btnSolveHint) {
+            btnSolveHint.classList.add('hidden');
+            btnSolveHint.classList.remove('active');
+        }
+
         if (currentGame) {
             currentGame.destroy();
             currentGame.container.innerHTML = '';
@@ -274,9 +279,20 @@ document.addEventListener('DOMContentLoaded', () => {
     btnCloseHint.addEventListener('click', () => {
         hintModal.classList.add('hidden');
     });
+    
+    const btnSolveHint = document.getElementById('btn-solve-hint');
+    if (btnSolveHint) {
+        btnSolveHint.addEventListener('click', () => {
+            if (currentGame) {
+                currentGame.toggleSolveHint();
+                btnSolveHint.classList.toggle('active', currentGame.solveHintEnabled);
+            }
+        });
+    }
 
     btnPlayAgain.addEventListener('click', () => {
         successModal.classList.add('hidden');
+        if (btnSolveHint) btnSolveHint.classList.remove('active');
         returnToMenu();
     });
 

@@ -319,9 +319,55 @@ h2 span { color: var(--primary); font-weight: 700; }
     transform: scale(0.9);
 }
 
+.icon-btn.active {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 0 15px rgba(14, 165, 233, 0.4);
+}
+
+.icon-btn.hidden {
+    display: none;
+}
+
 .moves {
     font-size: 1.25rem;
     font-weight: 500;
+}
+
+/* Hint Overlay */
+.hint-overlay {
+    position: absolute;
+    pointer-events: none;
+    z-index: 100;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.hint-arrow {
+    position: absolute;
+    background: rgba(14, 165, 233, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
+    animation: pulse-hint 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-hint {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 0.9; transform: scale(1.05); }
+}
+
+.hint-arrow svg {
+    width: 60%;
+    height: 60%;
+    color: white;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
 /* Game Board */

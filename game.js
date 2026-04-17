@@ -12,6 +12,15 @@ class PhotoShiftGame {
         this.moves = 0;
         this.tiles = [];
         this.isPlaying = false;
+        this.isStarting = false;
+        
+        // Solve Hint state
+        this.solutions = null;
+        this.solveHintEnabled = false;
+        this.solveAlgorithm = null;
+        this.solveStates = [];
+        this.solveMoves = [];
+        this.hintArrowEl = null;
         
         // Drag state
         this.isDragging = false;
@@ -27,6 +36,8 @@ class PhotoShiftGame {
             this.gameWrapper = this.container.parentElement;
             const oldControls = this.gameWrapper.querySelectorAll('.desktop-controls');
             oldControls.forEach(c => c.remove());
+            const oldHints = this.gameWrapper.querySelectorAll('.hint-overlay');
+            oldHints.forEach(h => h.remove());
         } else {
             const parentContainer = this.container.parentElement;
             this.gameWrapper = document.createElement('div');
@@ -36,6 +47,18 @@ class PhotoShiftGame {
         }
 
         this.init();
+        this.loadSolutions();
+    }
+
+    async loadSolutions() {
+        if (this.size !== 4) return;
+        try {
+            const response = await fetch('solutions4x4.json');
+            this.solutions = await response.json();
+            this.updateSolveHintUI();
+        } catch (err) {
+            console.error('Failed to load solutions', err);
+        }
     }
 
     async init() {
@@ -79,6 +102,13 @@ class PhotoShiftGame {
         this.gameWrapper.style.width = `${boardW}px`;
         this.gameWrapper.style.height = `${boardH}px`;
         this.gameWrapper.style.position = 'relative';
+        
+        this.container.innerHTML = ''; // clear board
+
+        // Create or reset hint overlay inside game-board for perfect alignment
+        this.hintOverlay = document.createElement('div');
+        this.hintOverlay.className = 'hint-overlay hidden';
+        this.container.appendChild(this.hintOverlay);
 
         this.tileW = this.boardWidth / this.size;
         this.tileH = this.boardHeight / this.size;
@@ -448,7 +478,188 @@ class PhotoShiftGame {
             this.onSnapCallback();
             this.moves++;
             this.onMoveCallback(this.moves);
+            this.updateSolveHintUI();
             this.checkWin();
+        }
+    }
+
+    // --- Solve Hint Logic ---
+    toggleSolveHint() {
+        this.solveHintEnabled = !this.solveHintEnabled;
+        if (!this.solveHintEnabled) {
+            this.hideHintArrow();
+        } else {
+            this.updateSolveHintUI();
+        }
+    }
+
+    updateSolveHintUI() {
+        const btn = document.getElementById('btn-solve-hint');
+        const overlay = this.hintOverlay;
+        if (!btn || !overlay) return;
+
+        if (this.size !== 4 || !this.isPlaying) {
+            btn.classList.add('hidden');
+            overlay.classList.add('hidden');
+            return;
+        }
+
+        const isTopSolved = this.isTopRowsSolved();
+        
+        // Show button if top rows solved or we are in the middle of an algorithm
+        if (isTopSolved || this.solveAlgorithm) {
+            btn.classList.remove('hidden');
+        } else {
+            btn.classList.add('hidden');
+            this.solveHintEnabled = false;
+            btn.classList.remove('active');
+        }
+
+        if (this.solveHintEnabled) {
+            this.processHint();
+        } else {
+            this.hideHintArrow();
+        }
+    }
+
+    isTopRowsSolved() {
+        // First 3 rows of 4x4: IDs 0 to 11
+        for (let i = 0; i < 12; i++) {
+            const tile = this.tiles.find(t => t.id === i);
+            if (!tile || tile.row !== tile.correctRow || tile.col !== tile.correctCol) return false;
+        }
+        return true;
+    }
+
+    getGridState() {
+        const grid = Array.from({length: this.size}, () => Array(this.size).fill(-1));
+        this.tiles.forEach(t => {
+            grid[t.row][t.col] = t.id;
+        });
+        return grid.map(row => row.join(',')).join(';');
+    }
+
+    async setupSolveAlgorithm() {
+        if (!this.solutions) return;
+
+        // Get last row state
+        const lastRowTiles = [];
+        for (let c = 0; c < 4; c++) {
+            const tile = this.tiles.find(t => t.row === 3 && t.col === c);
+            lastRowTiles.push(tile);
+        }
+
+        const tileToChar = { 12: 'M', 13: 'N', 14: 'O', 15: 'P' };
+        const state = lastRowTiles.map(t => tileToChar[t.id] || '?').join('');
+
+        if (state === 'MNOP' || state.includes('?')) {
+            this.solveAlgorithm = null;
+            return;
+        }
+
+        const moves = this.solutions[state];
+        if (!moves) return;
+
+        this.solveAlgorithm = state;
+        this.solveMoves = moves;
+        this.solveStates = [];
+
+        // Simulate states
+        let virtualGrid = Array.from({length: 4}, () => Array(4).fill(0));
+        this.tiles.forEach(t => virtualGrid[t.row][t.col] = t.id);
+
+        const getGridStr = (grid) => grid.map(r => r.join(',')).join(';');
+        const shiftVirtual = (grid, type, idx, amt) => {
+            const size = 4;
+            amt = ((amt % size) + size) % size;
+            if (type === 0) { // row
+                const row = grid[idx];
+                const newRow = new Array(size);
+                for (let i = 0; i < size; i++) newRow[(i + amt) % size] = row[i];
+                grid[idx] = newRow;
+            } else { // col
+                const col = grid.map(r => r[idx]);
+                const newCol = new Array(size);
+                for (let i = 0; i < size; i++) newCol[(i + amt) % size] = col[i];
+                for (let i = 0; i < size; i++) grid[i][idx] = newCol[i];
+            }
+        };
+
+        this.solveStates.push(getGridStr(virtualGrid));
+        for (const move of moves) {
+            shiftVirtual(virtualGrid, move[0], move[1], move[2]);
+            this.solveStates.push(getGridStr(virtualGrid));
+        }
+    }
+
+    processHint() {
+        if (this.size !== 4) return;
+
+        // If not already in an algorithm, try to start one
+        if (!this.solveAlgorithm && this.isTopRowsSolved()) {
+            this.setupSolveAlgorithm();
+        }
+
+        if (!this.solveAlgorithm) {
+            this.hideHintArrow();
+            return;
+        }
+
+        const currentState = this.getGridState();
+        const stepIndex = this.solveStates.indexOf(currentState);
+
+        if (stepIndex !== -1 && stepIndex < this.solveMoves.length) {
+            this.showHintArrow(this.solveMoves[stepIndex]);
+        } else {
+            this.hideHintArrow();
+            // If top rows solved again and we aren't at the start/middle of the old alg, clear it
+            if (this.isTopRowsSolved()) {
+                this.solveAlgorithm = null;
+                this.updateSolveHintUI(); // try to re-detect
+            }
+        }
+    }
+
+    showHintArrow(move) {
+        const [axis, index, dir] = move;
+        const overlay = this.hintOverlay;
+        if (!overlay) return;
+
+        overlay.classList.remove('hidden');
+        overlay.innerHTML = '';
+
+        const arrow = document.createElement('div');
+        arrow.className = 'hint-arrow';
+        
+        if (axis === 0) { // row
+            arrow.style.width = `${this.boardWidth}px`;
+            arrow.style.height = `${this.tileH}px`;
+            arrow.style.top = `${index * this.tileH}px`;
+            arrow.style.left = '0';
+        } else { // col
+            arrow.style.width = `${this.tileW}px`;
+            arrow.style.height = `${this.boardHeight}px`;
+            arrow.style.top = '0';
+            arrow.style.left = `${index * this.tileW}px`;
+        }
+
+        const svgArrow = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                ${axis === 0 
+                    ? (dir > 0 ? '<line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline>' : '<line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline>')
+                    : (dir > 0 ? '<line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline>' : '<line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline>')
+                }
+            </svg>
+        `;
+        arrow.innerHTML = svgArrow;
+        overlay.appendChild(arrow);
+    }
+
+    hideHintArrow() {
+        const overlay = this.hintOverlay;
+        if (overlay) {
+            overlay.classList.add('hidden');
+            overlay.innerHTML = '';
         }
     }
 
