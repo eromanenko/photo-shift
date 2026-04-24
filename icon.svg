@@ -12,6 +12,6 @@
     <rect x="170" y="170" width="130" height="130" rx="24" fill="#10b981"/>
     
     <!-- Arrow indicating slide -->
-    <path d="M 220 65 L 280 65 M 250 35 L 280 65 L 250 95" stroke="#fff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.5"/>
+    <path d="M 205 65 L 265 65 M 235 35 L 265 65 L 235 95" stroke="#fff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.5"/>
   </g>
 </svg>
